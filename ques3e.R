@@ -1,0 +1,6 @@
+library(stats)
+library(quantmod)
+library(car)
+priceall<-lm(price~assess+sqrft+lotsize+bdrms)
+summary(priceall)
+linearHypothesis(priceall,c("sqrft=0","lotsize=0","bdrms=0"))

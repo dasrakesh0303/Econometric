@@ -1,0 +1,164 @@
+---
+title: "BANA-ProjectAppendix"
+output:
+  word_document: default
+  html_document: default
+---
+```{r warning=FALSE, error=FALSE}
+library("MASS")
+library("leaps")
+library("rcompanion")
+library("quantmod")
+library("stats")
+
+```
+
+```{r}
+rm(list = ls())
+library(MASS)
+data("Boston")
+write.csv(Boston, "Boston.csv")
+
+data <- read.csv("Boston.csv")
+
+View(data)
+dim(data)
+summary(data)
+names(data)
+length(names(data))
+sum(is.na(data))
+
+pairs(~ medv + ptratio + black + lstat + dis + rm + crim, data = Boston, main = "Boston Data")
+par(mfrow=c(2,4))
+hist(Boston$crim)
+hist(Boston$zn)
+hist(Boston$indus)
+hist(Boston$chas)
+hist(Boston$nox)
+hist(Boston$rm)
+hist(Boston$age)
+hist(Boston$dis)
+hist(Boston$rad)
+hist(Boston$tax)
+hist(Boston$ptratio)
+hist(Boston$black)
+hist(Boston$lstat)
+hist(Boston$medv)
+
+fit1=lm(medv~.,data=Boston)
+summary(fit1)
+par(mfrow=c(1,1))
+plot(fit1$fitted.values,fit1$residuals)
+abline(h=0,col="red")
+
+qqnorm(fit1$residuals)
+qqline(fit1$residuals)
+
+library(MASS)
+par(mfrow=c(1,1))
+boxcox(fit1)
+
+
+library(leaps)
+data_allmodel_adjr2 <-leaps(x = data[,-15], y = data[,15], method = "adjr2")
+data_allmodel_adjr2
+
+test<- cbind(data_allmodel_adjr2$which, adjRsq = data_allmodel_adjr2$adjr2)
+
+View(test)
+max(test[,15])
+
+#drop chas and drop crim
+
+#take log
+library(rcompanion)
+x1 = transformTukey(Boston$crim, plotit=FALSE)
+x2 = transformTukey(Boston$zn, plotit=FALSE)
+x3 = transformTukey(Boston$indus, plotit=FALSE)
+x4 = transformTukey(Boston$nox, plotit=FALSE)
+x5 = transformTukey(Boston$rm, plotit=FALSE)
+x6 = transformTukey(Boston$age, plotit=FALSE)
+
+x7 = transformTukey(Boston$rad, plotit=FALSE)
+x8 = transformTukey(Boston$tax, plotit=FALSE)
+x9 = transformTukey(Boston$ptratio, plotit=FALSE)
+x10 = transformTukey(Boston$black, plotit=FALSE)
+x11 = transformTukey(Boston$lstat, plotit=FALSE)
+y= transformTukey(Boston$medv, plotit=FALSE)
+  
+
+a1 = Boston$crim^(-0.175)
+a2=Boston$zn^0.45
+a3=Boston$indus^0.3
+a4=Boston$nox^(-0.975)
+a5=Boston$rm^0.5
+a6=Boston$age^1.5
+a7=Boston$rad^(-0.25)
+a8=Boston$tax^(-1.175)
+a9=Boston$ptratio^4.8
+a10=Boston$black^9.975
+a11=Boston$lstat^0.225
+y1=Boston$medv^0.175
+
+
+
+fit2 <- lm(y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11)
+summary(fit2)
+par(mfrow=c(1,1))
+plot(fit2$fitted.values,fit2$residuals)
+abline(h=0,col="red")
+
+qqnorm(fit2$residuals)
+qqline(fit2$residuals)
+
+vif(fit2)
+
+fit3 <- lm(y1~a5+a8+a9+a11)
+summary(fit3)
+par(mfrow=c(1,1))
+plot(fit3$fitted.values,fit3$residuals)
+abline(h=0,col="red")
+
+qqnorm(fit3$residuals)
+qqline(fit3$residuals)
+
+boxcox(fit3)
+vif(fit3)
+
+par(mfrow=c(2,2))
+plot(fit3)  
+  
+#doublecheck
+add1 (lm(y1~1,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")
+add1 (lm(y1~a1,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")
+add1 (lm(y1~a1+a5,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")  
+add1 (lm(y1~a1+a5+a11,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")  
+add1 (lm(y1~a1+a5+a9+a11,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")  
+add1 (lm(y1~a1+a5+a9+a11+a8,data=data),y1~a1+a2+a3+a4+a5+a6+a7+a8+a9+a10+a11, test = "F")  
+
+#finalmodel
+model <- lm(y1~a5+a8+a9+a11)
+summary(model)  
+par(mfrow=c(2,2))
+plot(model)
+
+#prediction
+confint(model)
+head(predict(model,data,interval=c("pred"),level = 0.95, type = "response"))
+#standardized residuals
+standardized_res=model$residuals/summary(model)$sigma
+# PRESS residuals
+PRESS_res=model$residuals/(1 - hatvalues(model));
+par(mfrow=c(2,2));
+plot(model$fitted.values,model$residuals,pch=20,ylab="residual",xlab="fitted value");
+abline(h=0,col="grey")
+plot(model$fitted.values,standardized_res,pch=20,ylab="standardized residual",xlab="fitted value");
+abline(h=0,col="grey");
+plot(model$fitted.values,PRESS_res,pch=20,ylab="PRESS residual",xlab="fitted value");
+abline(h=0,col="grey");
+plot(model$fitted.values,hatvalues(model),pch=20,ylab="leverage",xlab="fitted value");
+
+
+
+```
+

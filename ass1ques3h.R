@@ -1,0 +1,10 @@
+logprice=log(price)
+linmodellog=lm(logprice~lotsize+bdrms)
+summary(linmodellog)
+bdlot=lm(lotsize~bdrms)
+summary(bdlot)
+notlnprice=exp(linmodellog$coefficients[1]+linmodellog$coefficients[2]*(bdlot$coefficients[1]+bdlot$coefficients[2]*bdrms)+linmodellog$coefficients[3]*bdrms)
+notlnprice1=exp(linmodellog$coefficients[1]+linmodellog$coefficients[2]*(bdlot$coefficients[1]+bdlot$coefficients[2]*(bdrms+1))+linmodellog$coefficients[3]*(bdrms+1))
+#Percentchangeforbedroom
+pchangefbd=((notlnprice1-notlnprice)/notlnprice)*100
+ansquesi=exp(linmodellog$coefficients[1]+linmodellog$coefficients[2]*8000+linmodellog$coefficients[3]*4)
